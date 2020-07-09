@@ -1,0 +1,21 @@
+modLoader="javafml"
+loaderVersion="[28,)"
+
+[[mods]]
+modId="saveall"
+version="${file.jarVersion}"
+displayName="Save All"
+
+# We will come back later.
+credits="FTB-BACKUPS"
+
+authors=["teacon","jihuayu"]
+
+description=""
+
+[[dependencies.saveall]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.15, 1.15.2]"
+    ordering="NONE"
+    side="SERVER"
