@@ -3,9 +3,12 @@ package org.teacon.saveall;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 
 import java.io.File;
@@ -26,9 +29,9 @@ public class SaveAll {
 
     @SubscribeEvent
     public static void onServerTickEvent(TickEvent.ServerTickEvent event) {
-        if (event.phase.equals(TickEvent.Phase.START) || server == null) return;
+        if (event.phase.equals(TickEvent.Phase.START) || server == null || config == null) return;
         tick++;
-        if (tick > 20 * 10) {
+        if (tick > config.saveTime.get()) {
             tick = 0;
             for (ServerWorld world : server.getWorlds()) {
                 if (world != null) {
@@ -53,30 +56,25 @@ public class SaveAll {
                     addNum(out, time.get(Calendar.MINUTE), '-');
                     addNum(out, time.get(Calendar.SECOND), '\0');
                     out.append(".zip");
-                    File dstFile = newFile(new File("backups", out.toString()));
+                    File dstFile = newFile(new File(config.folder.get(), out.toString()));
                     ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(dstFile));
                     zos.setLevel(DEFAULT_COMPRESSION);
 
                     byte[] buffer = new byte[4096];
 
-                    for (Map.Entry<File, String> entry : fileMap.entrySet())
-                    {
-                        try
-                        {
+                    for (Map.Entry<File, String> entry : fileMap.entrySet()) {
+                        try {
                             ZipEntry ze = new ZipEntry(entry.getValue());
 
                             zos.putNextEntry(ze);
                             FileInputStream fis = new FileInputStream(entry.getKey());
                             int len;
-                            while ((len = fis.read(buffer)) > 0)
-                            {
+                            while ((len = fis.read(buffer)) > 0) {
                                 zos.write(buffer, 0, len);
                             }
                             zos.closeEntry();
                             fis.close();
-                        }
-                        catch (Exception ex)
-                        {
+                        } catch (Exception ex) {
                             ex.printStackTrace();
                         }
                     }
@@ -124,25 +122,29 @@ public class SaveAll {
             sb.append(c);
         }
     }
-    public static File newFile(File file)
-    {
-        if (!file.exists())
-        {
-            try
-            {
+
+    public static File newFile(File file) {
+        if (!file.exists()) {
+            try {
                 File parent = file.getParentFile();
-                if (!parent.exists())
-                {
+                if (!parent.exists()) {
                     parent.mkdirs();
                 }
                 file.createNewFile();
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
         return file;
     }
+
+    public static Config config;
+
+    public SaveAll() {
+        ForgeConfigSpec.Builder configBuilder = new ForgeConfigSpec.Builder();
+        config = new Config(configBuilder);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, configBuilder.build(), MOD_ID + ".toml");
+    }
+
 }
